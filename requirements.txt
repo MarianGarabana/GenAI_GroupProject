@@ -1,10 +1,33 @@
-langchain>=0.1.0
-langgraph>=0.1.0
-langchain-google-genai
-langchain-community
-chromadb
-streamlit
-pydantic
-python-dotenv
-duckduckgo-search
-pypdf
+# Core LangChain + LangGraph
+# Taught in Sessions 8-9 (LangChain) and 9-10 (LangGraph)
+langchain>=0.3.0
+langgraph>=1.2.0
+langchain-core>=1.4.0
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+
+# Google Gemini — the LLM used throughout the course
+# Taught in Sessions 3, 10-11
+langchain-google-genai>=2.0.0
+
+# Vector store for RAG pipeline
+# Taught in Sessions 5-6
+chromadb>=0.5.0
+langchain-chroma>=0.1.0
+
+# Web UI
+streamlit>=1.35.0
+
+# Data validation — used for structured outputs from Gemini
+pydantic>=2.0.0
+
+# Environment variables (.env file loading)
+python-dotenv>=1.0.0
+
+# Web search tool for the validation agent
+# Taught as a LangChain tool in Sessions 7-9
+duckduckgo-search>=6.0.0
+
+# PDF text extraction — used in ingest_node
+# Taught in Session 6 (RAG document loading)
+pypdf>=4.0.0
