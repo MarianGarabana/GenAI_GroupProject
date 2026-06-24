@@ -118,7 +118,7 @@ GenAI_GroupProject/
 
 | Role | Responsibility | Key Technology |
 |---|---|---|
-| **Role 1** — Graph Architect | LangGraph StateGraph, edges, human interrupt, state schema | LangGraph, MemorySaver |
+| **Marian Garabana** — Graph Architect | LangGraph StateGraph, edges, human interrupt, state schema | LangGraph, MemorySaver |
 | **Role 2** — RAG Engineer | PDF ingestion, text splitting, Chroma vector store, claim extraction | Chroma, Embeddings |
 | **Role 3** — Agent Engineer | Web validation agent, DuckDuckGo + Wikipedia tools, memory | LangChain AgentExecutor |
 | **Role 4** — Output Engineer | Scoring chain, investment memo writer | LCEL, Gemini |
