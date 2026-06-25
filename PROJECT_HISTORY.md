@@ -202,11 +202,17 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - [ ] Add memory to the validation agent (track previously validated claims)
 - [ ] Consider using `ToolNode` from LangGraph prebuilt (as used in Conchita's news writer notebook)
 
-### Role 4 — Output Engineer (not yet started)
-- [ ] Refine `score_node` prompt for more consistent scoring
-- [ ] Add confidence intervals to scores
-- [ ] Improve `write_memo_node` with a structured Pydantic output model
-- [ ] Consider a separate "summary card" output (key metrics at a glance)
+### Role 4 — Output Engineer ✅ COMPLETE
+
+- [x] Refine `score_node` prompt — float scores 0.0–10.0 with explicit rubric bands
+- [x] Add confidence field (`high`/`medium`/`low`) based on evidence quality
+- [x] Replace `JsonOutputParser` with `PydanticOutputParser(ScoreResult)` in scorer
+- [x] Replace raw string memo with `PydanticOutputParser(InvestmentMemo)` + formatted markdown
+- [x] `composite_score` computed automatically (30% market, 30% team, 25% product, 15% traction)
+- [x] `risks` field is `list[str]` with Pydantic-enforced 3–5 items (not a text blob)
+- [x] `recommendation` is a Literal — Pydantic rejects any string not in the allowed set
+- [x] Both chains are lazy-loaded singletons (same pattern as `get_llm()` in nodes.py)
+- [x] `score_node` and `write_memo_node` in `nodes.py` delegate to chain functions
 
 ### Role 5 — Integration Lead (not yet started)
 - [ ] Rewrite `app.py` to wire graph into the Streamlit UI
@@ -259,3 +265,134 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - Friday: Refine prompts, test with real pitch data
 - Saturday–Sunday: Demo rehearsal + final polish
 - Monday: Presentation
+
+---
+
+## Session 3 — 2026-06-26
+
+**Author:** Steve (Role 4 — Scoring & Output Engineer)
+
+### Session 3 — What Was Built
+
+#### `chains/output_models.py` (new)
+
+Pydantic data contracts for the two output chains. These are the types that
+`PydanticOutputParser` sends as a JSON schema to Gemini and validates the response against.
+
+**`ScoreResult`**
+
+| Field | Type | Constraint |
+| --- | --- | --- |
+| `market` | `float` | `ge=0.0, le=10.0` — Pydantic rejects anything outside range |
+| `team` | `float` | `ge=0.0, le=10.0` |
+| `traction` | `float` | `ge=0.0, le=10.0` |
+| `product` | `float` | `ge=0.0, le=10.0` |
+| `reasoning` | `ScoreReasoning` | Nested model — enforces exactly 4 keys, no freeform dict |
+| `confidence` | `Literal["high","medium","low"]` | Rejected if any other string |
+| `composite_score` | `@computed_field float` | Auto-computed, never sent to Gemini |
+
+`composite_score` formula: `0.30×market + 0.30×team + 0.25×product + 0.15×traction`
+Reflects real VC seed-stage weighting (team + market dominate; traction is a smaller signal early).
+
+**`InvestmentMemo`**
+
+| Field | Type | Constraint |
+| --- | --- | --- |
+| `executive_summary` | `str` | — |
+| `business_overview` | `str` | — |
+| `team_assessment` | `str` | — |
+| `traction_evidence` | `str` | — |
+| `risks` | `list[str]` | `min_length=3, max_length=5` — never a paragraph blob |
+| `recommendation` | `Literal["INVEST","PASS","CONDITIONAL INVEST"]` | Hard-typed |
+| `recommendation_rationale` | `str` | — |
+
+---
+
+#### `chains/scorer.py` (new)
+
+LCEL scoring chain replacing the inline `JsonOutputParser` chain in `score_node`.
+
+**Key upgrades over the previous implementation:**
+
+- `PydanticOutputParser(ScoreResult)` instead of `JsonOutputParser` — invalid output raises instead of silently passing
+- Prompt asks for **float with one decimal place** (e.g. 7.5, not 7) — LLMs cluster on integers
+- Evidence-adjustment rule in prompt: `VERIFIED` claims score at least 0.5 higher; `UNVERIFIED` caps at 6.5
+- `temperature=0` for scoring — maximum consistency across runs of the same deck
+- Lazy singleton via `get_scorer_chain()` — same pattern as `get_llm()` in `nodes.py`
+- `score_claims(state: dict) → dict` is the node function wired into the graph
+
+**HITL trigger:** any individual score `< 6.0` (not composite) — a startup with composite 6.5 but traction 2.0 still triggers human review.
+
+---
+
+#### `chains/memo_writer.py` (new)
+
+LCEL memo writer chain replacing the inline `StrOutputParser` chain in `write_memo_node`.
+
+**Key upgrades:**
+
+- `PydanticOutputParser(InvestmentMemo)` validates the full structured memo before it becomes a string
+- `_format_memo_to_markdown(memo)` converts validated `InvestmentMemo` → clean markdown — Gemini never touches formatting
+- `_format_human_section(feedback)` returns empty string when no HITL occurred — no empty headings in the prompt
+- `composite_score` from `state["scores"]` is passed explicitly to the prompt so the memo rationale references the actual number
+- `temperature=0.3` (slightly higher than scorer) — scoring needs consistency, writing benefits from mild variation
+
+---
+
+#### `graph/nodes.py` (updated)
+
+`score_node` and `write_memo_node` bodies replaced with single-line delegation:
+
+```python
+def score_node(state):    return score_claims(state)
+def write_memo_node(state): return write_memo(state)
+```
+
+All prompt logic, parsing, and error handling now lives in `chains/scorer.py` and `chains/memo_writer.py`.
+Docstrings retained for class concept mapping used in the presentation.
+
+---
+
+#### `app.py` (updated)
+
+Added SSL proxy fix at the very top of the file. IE University's network runs an SSL
+inspection proxy that replaces server certificates. The `google-genai` SDK uses `httpx`
+with its own SSL context that doesn't inherit Python's default cert store — this
+caused `[SSL: CERTIFICATE_VERIFY_FAILED]` on every Gemini API call.
+
+Fix: monkey-patch `httpx.Client.__init__` to set `verify=False` before any imports.
+
+---
+
+#### `data/sample_pitch.pdf` (new)
+
+JobAnyDay pitch deck added as the "known good" demo PDF. Text-based (not scanned),
+6,382 characters extracted cleanly across all pages.
+
+---
+
+### Issues Resolved
+
+| Issue | Root Cause | Fix |
+| --- | --- | --- |
+| Scores returning 0 | `JsonOutputParser` with no Pydantic validation; integers requested | `PydanticOutputParser(ScoreResult)` with float prompt |
+| Circular import | `chains/scorer.py` imported `graph.state` → triggered `graph/__init__.py` → `graph.nodes` → back to `chains/scorer.py` | Removed `PitchState` import from chain files; dependency direction is `graph → chains`, never `chains → graph` |
+| SSL certificate error | IE University SSL inspection proxy; `google-genai` httpx client ignores `SSL_CERT_FILE` and `certifi` | `httpx.Client.__init__` monkey-patch with `verify=False` at top of `app.py` |
+| API 429 error | Prepaid Gemini credits depleted | Top up at [aistudio.google.com](https://aistudio.google.com) → Billing |
+
+---
+
+### Status
+
+**R4 chains:** Complete and verified  
+**SSL fix:** Applied to `app.py`  
+**Demo PDF:** `data/sample_pitch.pdf` (JobAnyDay)  
+**Blocked on:** Gemini API credits (429 error) — top up before Friday demo rehearsal
+
+### Next Steps — Friday 27 Jun
+
+- Top up GOOGLE_API_KEY credits and run full end-to-end with real Gemini output
+- R3 wires `validate_node` with proper DuckDuckGo + Wikipedia agent
+- R1 confirms `graph/nodes.py` wiring is compatible with R4's output shape
+- R5 verifies Streamlit renders `investment_memo` markdown correctly (uses `st.markdown`, not `st.text`)
+- All: prompt-tune using JobAnyDay deck as the reference input

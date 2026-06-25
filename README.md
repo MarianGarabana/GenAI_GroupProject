@@ -68,6 +68,7 @@ Every component in this project maps directly to a concept taught in class:
 | **LangGraph — MemorySaver + interrupt()** | 9–10 | `graph/graph.py` + `nodes.py` — human-in-the-loop pause/resume |
 | **Google Gemini (ChatGoogleGenerativeAI)** | 3, 10–11 | Every node that calls the LLM — uses `gemini-2.5-flash` |
 | **LCEL Chains (prompt \| llm \| parser)** | 8–9 | `extract_node`, `score_node`, `validate_node`, `write_memo_node` |
+| **Pydantic structured output (PydanticOutputParser)** | 8–9 | `chains/scorer.py` + `chains/memo_writer.py` — validates Gemini output against typed models |
 | **ChatPromptTemplate** | 8–9 | Every Gemini call uses structured prompt templates |
 | **AI Agents + Tool Use** | 7 | `validate_node` — agent uses DuckDuckGo to search the web |
 | **Function Calling** | 10–11 | `DuckDuckGoSearchRun.run()` — LLM-driven tool invocation |
@@ -105,6 +106,11 @@ GenAI_GroupProject/
 │
 ├── agents/                 # Role 3 — Agent Engineer
 ├── chains/                 # Role 4 — Output Engineer
+│   ├── output_models.py    #   Pydantic models: ScoreResult + InvestmentMemo
+│   ├── scorer.py           #   LCEL chain: claims+evidence → Gemini → ScoreResult
+│   └── memo_writer.py      #   LCEL chain: full state → Gemini → formatted memo
+├── data/
+│   └── sample_pitch.pdf    # "Known good" demo deck (JobAnyDay)
 ├── tests/                  # Role 5 — Integration Lead
 │
 ├── app.py                  # Streamlit UI

@@ -1,3 +1,15 @@
+# SSL fix for IE University / corporate networks — must come before all other imports.
+# The university network runs an SSL inspection proxy that replaces server certificates
+# with its own. The google-genai SDK uses httpx, which rejects those certificates.
+# verify=False disables verification for httpx connections only. Acceptable for a
+# local class project; do not use in production.
+import httpx
+_orig_httpx_init = httpx.Client.__init__
+def _ssl_fixed_httpx_init(self, *args, **kwargs):
+    kwargs["verify"] = False
+    _orig_httpx_init(self, *args, **kwargs)
+httpx.Client.__init__ = _ssl_fixed_httpx_init
+
 import streamlit as st
 import tempfile
 import os

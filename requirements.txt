@@ -18,11 +18,18 @@ langchain-chroma>=0.1.0
 # Web UI
 streamlit>=1.35.0
 
+# HTTP client — used directly in app.py for the SSL proxy fix (verify=False)
+# Installed transitively by google-genai but declared here because we import it
+httpx>=0.24.0
+
 # Data validation — used for structured outputs from Gemini
 pydantic>=2.0.0
 
 # Environment variables (.env file loading)
 python-dotenv>=1.0.0
+
+# Testing
+pytest>=8.0.0
 
 # Web search tool for the validation agent
 # Taught as a LangChain tool in Sessions 7-9
