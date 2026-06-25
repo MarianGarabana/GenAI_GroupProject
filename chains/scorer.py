@@ -21,7 +21,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
-from graph.state import PitchState
 from chains.output_models import ScoreResult
 
 
@@ -123,7 +122,7 @@ def get_scorer_chain():
 # NODE FUNCTION — this is what graph/nodes.py calls
 # ============================================================
 
-def score_claims(state: PitchState) -> dict:
+def score_claims(state: dict) -> dict:
     """
     LangGraph node function: reads claims + validation from state,
     runs the scoring chain, writes results back to state.

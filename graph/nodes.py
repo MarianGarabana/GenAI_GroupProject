@@ -37,6 +37,8 @@ from langgraph.types import interrupt
 from pypdf import PdfReader
 
 from graph.state import PitchState
+from chains.scorer import score_claims
+from chains.memo_writer import write_memo
 
 # Load environment variables from .env file (GOOGLE_API_KEY)
 load_dotenv()
@@ -358,91 +360,7 @@ def score_node(state: PitchState) -> dict:
     CLASS CONCEPT: "LCEL Chains (prompt | llm | parser)" — Sessions 8-9
     CLASS CONCEPT: "Gemini structured output" — Session 3, 10-11
     """
-    claims = state.get("extracted_claims", {})
-    validation = state.get("validation_results", {})
-
-    if not claims:
-        return {
-            "scores": {},
-            "human_review_required": True,
-            "error": "Cannot score — no claims were extracted.",
-        }
-
-    prompt = ChatPromptTemplate.from_template(
-        """You are a senior partner at a tier-1 venture capital firm scoring a startup.
-
-STARTUP'S CLAIMS FROM PITCH DECK:
-{claims}
-
-INDEPENDENT VALIDATION EVIDENCE:
-{validation}
-
-Score each of the 4 dimensions from 0 to 10 using this scale:
-  0-3: Very weak — major red flags, do not invest
-  4-5: Below average — significant concerns
-  6-7: Average — acceptable with some concerns
-  8-9: Strong — compelling evidence
-  10:  Exceptional — rare, world-class
-
-Return ONLY valid JSON, nothing else:
-{{
-    "market": <integer 0-10>,
-    "team": <integer 0-10>,
-    "traction": <integer 0-10>,
-    "product": <integer 0-10>,
-    "reasoning": {{
-        "market": "<one sentence explaining the market score>",
-        "team": "<one sentence explaining the team score>",
-        "traction": "<one sentence explaining the traction score>",
-        "product": "<one sentence explaining the product score>"
-    }}
-}}"""
-    )
-
-    parser = JsonOutputParser()
-    chain = prompt | get_llm() | parser
-
-    try:
-        result = chain.invoke(
-            {
-                "claims": str(claims),
-                "validation": str(validation),
-            }
-        )
-
-        # Determine if human review is needed
-        # If ANY numeric score is below 6, a human analyst must review
-        numeric_scores = [
-            result.get("market", 10),
-            result.get("team", 10),
-            result.get("traction", 10),
-            result.get("product", 10),
-        ]
-        needs_review = any(
-            isinstance(s, (int, float)) and s < 6 for s in numeric_scores
-        )
-
-        return {
-            "scores": result,
-            "human_review_required": needs_review,
-            "error": None,
-        }
-
-    except Exception as e:
-        # If scoring fails, force human review to be safe
-        return {
-            "scores": {
-                "market": 0, "team": 0, "traction": 0, "product": 0,
-                "reasoning": {
-                    "market": "Scoring failed",
-                    "team": "Scoring failed",
-                    "traction": "Scoring failed",
-                    "product": "Scoring failed",
-                },
-            },
-            "human_review_required": True,
-            "error": f"Scoring failed: {str(e)}",
-        }
+    return score_claims(state)
 
 
 # ============================================================
@@ -532,63 +450,4 @@ def write_memo_node(state: PitchState) -> dict:
     CLASS CONCEPT: "Gemini text generation" — Session 3
     """
 
-    # Include human feedback section only if a human reviewed
-    human_section = ""
-    if state.get("human_feedback"):
-        human_section = f"""
-HUMAN ANALYST REVIEW:
-{state['human_feedback']}
-"""
-
-    prompt = ChatPromptTemplate.from_template(
-        """You are a partner at a tier-1 venture capital firm writing an internal
-investment committee memo after reviewing a startup pitch deck.
-
-ANALYSIS DATA:
-Claims extracted from pitch deck: {claims}
-Web validation evidence: {validation}
-Scores (0-10): {scores}
-{human_section}
-
-Write a formal investment memo with these EXACT sections:
-
-## 1. EXECUTIVE SUMMARY
-(2-3 sentences: who they are, what they do, overall impression)
-
-## 2. BUSINESS OVERVIEW
-(Market opportunity, product/service description, competitive position)
-
-## 3. TEAM ASSESSMENT
-(Founder credentials, relevant experience, team completeness)
-
-## 4. TRACTION & EVIDENCE
-(Growth metrics, revenue, customers, milestones — validated against web data)
-
-## 5. RISKS & CONCERNS
-(Top 3-5 risks based on the analysis and validation results)
-
-## 6. FINAL RECOMMENDATION
-State clearly: **INVEST** / **PASS** / **CONDITIONAL INVEST**
-Then in 2-3 sentences explain exactly why, referencing the scores.
-
-Use professional VC language. Be direct and honest. Do not sugarcoat."""
-    )
-
-    chain = prompt | get_llm() | StrOutputParser()
-
-    try:
-        memo = chain.invoke(
-            {
-                "claims": str(state.get("extracted_claims", {})),
-                "validation": str(state.get("validation_results", {})),
-                "scores": str(state.get("scores", {})),
-                "human_section": human_section,
-            }
-        )
-        return {"investment_memo": memo, "error": None}
-
-    except Exception as e:
-        return {
-            "investment_memo": f"Memo generation failed. Error: {str(e)}",
-            "error": str(e),
-        }
+    return write_memo(state)

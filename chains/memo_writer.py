@@ -22,7 +22,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
-from graph.state import PitchState
 from chains.output_models import InvestmentMemo
 
 
@@ -162,7 +161,7 @@ def get_memo_chain():
 # NODE FUNCTION — this is what graph/nodes.py calls
 # ============================================================
 
-def write_memo(state: PitchState) -> dict:
+def write_memo(state: dict) -> dict:
     """
     LangGraph node function: reads full state, generates and validates the
     investment memo, formats it to markdown, writes to state.
