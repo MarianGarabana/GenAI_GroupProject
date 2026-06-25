@@ -65,14 +65,14 @@ def create_agent(llm, tools, system_message: str):
     return prompt | llm
 
 
-MAX_CHARS_PER_CLAIM = 600
+MAX_CHARS_PER_CLAIM = 1200
 
 VALIDATOR_SYSTEM_MESSAGE = f"""You are a research analyst gathering evidence to support a venture capital evaluation.
 
 For each claim provided:
 1. Search the web for current market data, benchmarks, or news
 2. Search Wikipedia for industry background or founder context
-3. Write exactly 3-4 sentences of factual evidence (max {MAX_CHARS_PER_CLAIM} characters per claim) including:
+3. Write 5-7 sentences of factual evidence (max {MAX_CHARS_PER_CLAIM} characters per claim) including:
    - Specific numbers, statistics, or facts from your search results
    - How the market or industry actually looks based on public data
    - Any relevant context about the founders, competitors, or product category
@@ -145,12 +145,27 @@ def validate_claims(state: dict) -> dict:
     claims = state.get("extracted_claims", {})
 
     if not claims:
-        return {"validation_giresults": {}, "error": "No claims to validate."}
+        return {"validation_results": {}, "error": "No claims to validate."}
+
+    # Separate claims into ones the agent should research vs ones not mentioned
+    skipped = {
+        key: str(value)
+        for key, value in claims.items()
+        if not value or "Not mentioned" in str(value)
+    }
+    to_research = {
+        key: value
+        for key, value in claims.items()
+        if key not in skipped
+    }
+
+    # If everything was skipped, return immediately
+    if not to_research:
+        return {"validation_results": {k: "Not mentioned in pitch deck." for k in claims}, "error": None}
 
     claims_text = "\n".join(
         f"- {key.replace('_', ' ').title()}: {value}"
-        for key, value in claims.items()
-        if value and "Not mentioned" not in str(value)
+        for key, value in to_research.items()
     )
 
     prompt = (
@@ -164,7 +179,6 @@ def validate_claims(state: dict) -> dict:
             {"messages": [HumanMessage(content=prompt)]}
         )
 
-        # The final message is the agent's written assessment.
         # Gemini 2.5 Flash returns content as a list of parts, not a plain string.
         final_message = result["messages"][-1]
         content = final_message.content if hasattr(final_message, "content") else ""
@@ -176,12 +190,11 @@ def validate_claims(state: dict) -> dict:
         else:
             summary = str(content)
 
-        # Parse the agent's summary back into per-claim results.
-        # Find each heading's position, then slice between consecutive headings
+        # Find each heading's position, then slice to the NEXT heading
         # so sections don't bleed into each other.
         lower = summary.lower()
         positions = {}
-        for key in claims:
+        for key in to_research:
             label = key.replace("_", " ").title()
             idx = lower.find(label.lower())
             if idx != -1:
@@ -189,14 +202,19 @@ def validate_claims(state: dict) -> dict:
 
         sorted_keys = sorted(positions, key=lambda k: positions[k])
         validation_results = {}
-        for key in sorted_keys:
+        for i, key in enumerate(sorted_keys):
             start = positions[key]
-            validation_results[key] = summary[start : start + MAX_CHARS_PER_CLAIM].strip()
+            end = positions[sorted_keys[i + 1]] if i + 1 < len(sorted_keys) else len(summary)
+            validation_results[key] = summary[start:end].strip()
 
-        # Any claim whose heading wasn't found gets the first MAX_CHARS_PER_CLAIM of the summary
-        for key in claims:
+        # Claims not found in the response get the full summary as fallback
+        for key in to_research:
             if key not in validation_results:
-                validation_results[key] = summary[:MAX_CHARS_PER_CLAIM]
+                validation_results[key] = summary
+
+        # Claims that were skipped get a clear label
+        for key, value in skipped.items():
+            validation_results[key] = value
 
         return {"validation_results": validation_results, "error": None}
 
