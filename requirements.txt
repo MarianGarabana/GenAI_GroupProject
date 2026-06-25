@@ -24,9 +24,11 @@ pydantic>=2.0.0
 # Environment variables (.env file loading)
 python-dotenv>=1.0.0
 
-# Web search tool for the validation agent
-# Taught as a LangChain tool in Sessions 7-9
+# Web search + Wikipedia tools for the validation agent
+# Taught as LangChain tools in Sessions 7-9
 duckduckgo-search>=6.0.0
+ddgs>=0.1.0
+wikipedia>=1.4.0
 
 # PDF text extraction — used in ingest_node
 # Taught in Session 6 (RAG document loading)

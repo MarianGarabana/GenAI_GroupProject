@@ -1,0 +1,33 @@
+[project]
+name = "vc-pitch-evaluator"
+version = "0.1.0"
+description = "VC Startup Pitch Evaluator — Generative AI course project, IE University MBDS"
+requires-python = ">=3.11"
+dependencies = [
+    # LangChain + LangGraph
+    "langchain>=0.3.0",
+    "langgraph>=1.2.0",
+    "langchain-core>=1.4.0",
+    "langchain-community>=0.3.0",
+    "langchain-text-splitters>=0.3.0",
+    # Google Gemini
+    "langchain-google-genai>=2.0.0",
+    # Vector store (RAG)
+    "chromadb>=0.5.0",
+    "langchain-chroma>=0.1.0",
+    # Web UI
+    "streamlit>=1.35.0",
+    # Structured output
+    "pydantic>=2.0.0",
+    # Env vars
+    "python-dotenv>=1.0.0",
+    # Search tools
+    "duckduckgo-search>=6.0.0",
+    "ddgs>=0.1.0",
+    "wikipedia>=1.4.0",
+    # PDF extraction
+    "pypdf>=4.0.0",
+]
+
+[tool.uv]
+dev-dependencies = []
