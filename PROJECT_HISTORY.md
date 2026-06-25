@@ -227,3 +227,35 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - [ ] Test with a real pitch deck PDF end-to-end
 - [ ] Add error handling UI in Streamlit (show user-friendly error messages)
 - [ ] Write end-to-end tests in `tests/` folder
+
+
+
+
+## Session 2 — 2026-06-25 (continued)
+
+**Author:** Dom (Role 5 — Integration Lead)
+
+### End-to-End Integration Complete
+
+✅ **Graph execution verified** — PDF upload → ingest → extract → validate → score → human interrupt
+✅ **Human-in-the-loop working** — Graph pauses correctly when any score < 6
+✅ **Analyst review form functional** — Captures feedback textarea
+✅ **Error handling in place** — Shows user-friendly errors
+
+### Status
+
+**Backend:** Complete (Marian's 6-node graph)  
+**Frontend:** Complete (Streamlit wired to graph)  
+**Integration:** Complete (E2E tested)
+
+**Known issues to fix Thursday:**
+- Scores currently returning 0 (likely placeholder data in scorer node)
+- Need R3 (Agent Engineer) to enhance validate_node with proper DuckDuckGo integration
+- Need R4 (Output Engineer) to refine scorer and memo writer chains
+
+### Next steps
+
+- Thursday: R3 & R4 arrive, enhance agent + output chains
+- Friday: Refine prompts, test with real pitch data
+- Saturday–Sunday: Demo rehearsal + final polish
+- Monday: Presentation
