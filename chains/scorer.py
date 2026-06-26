@@ -57,16 +57,20 @@ DIMENSION GUIDE:
   traction — Revenue, user growth, and partnerships weighted by stage (seed = less traction expected)
   product  — Differentiation, defensibility, technical quality, problem-solution fit
 
-EVIDENCE ADJUSTMENT RULE:
-  - A VERIFIED claim should score at least 0.5 higher than the same claim marked UNVERIFIED
-  - An UNVERIFIED claim caps the dimension score at 6.5 unless the claim is inherently private
-    (e.g. a proprietary algorithm detail that cannot appear in public search results)
-  - A PLAUSIBLE claim sits between VERIFIED and UNVERIFIED — use your judgment
+EVIDENCE QUALITY GUIDE — use the validation text to judge each claim:
+  Strong evidence  → score at least 0.5 higher than if unsupported. The evidence contains
+                     specific numbers, statistics, named sources, or directly corroborates the claim.
+  Weak evidence    → cap the dimension at 6.5. The evidence is vague, generic industry background,
+                     or does not directly relate to what the startup claims.
+  No evidence      → cap the dimension at 5.0. The validation text says the claim could not be
+                     verified or the agent found nothing relevant.
+  Private by nature → ignore the cap if the claim is inherently unverifiable publicly
+                     (e.g. a proprietary algorithm or internal revenue not yet disclosed).
 
 CONFIDENCE GUIDE:
-  high   — 3 or more claims are VERIFIED by web evidence
-  medium — 1 or 2 claims are VERIFIED, rest are PLAUSIBLE
-  low    — all claims are UNVERIFIED or evidence is missing
+  high   — 3 or more claims are supported by specific, named data points in the evidence
+  medium — 1 or 2 claims have strong evidence; remainder are vague or general
+  low    — evidence is missing, generic, or contradicts the startup's claims
 
 Do NOT include a composite_score field — that is computed automatically.
 
