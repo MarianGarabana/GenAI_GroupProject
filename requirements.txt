@@ -33,3 +33,6 @@ wikipedia>=1.4.0
 # PDF text extraction — used in ingest_node
 # Taught in Session 6 (RAG document loading)
 pypdf>=4.0.0
+
+# Testing
+pytest>=8.0.0
