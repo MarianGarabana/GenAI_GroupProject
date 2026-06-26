@@ -99,30 +99,43 @@ Every component in this project maps directly to a concept taught in class:
 ```
 GenAI_GroupProject/
 │
-├── graph/                  # Role 1 — Graph Architect
-│   ├── state.py            # PitchState TypedDict (shared state contract)
-│   ├── nodes.py            # All 6 agent node implementations
-│   └── graph.py            # StateGraph: nodes, edges, compile, visualization
+├── graph/                      # Role 1 — Graph Architect
+│   ├── state.py                # PitchState TypedDict (shared state contract)
+│   ├── nodes.py                # All 6 agent node implementations
+│   └── graph.py                # StateGraph: nodes, edges, compile, visualization
 │
-├── rag/                    # Role 2 — RAG Engineer
-│   └── rag_demo.py         # Full RAG pipeline: Chroma + embeddings + retrieval chain
+├── rag/                        # Role 2 — RAG Engineer
+│   ├── ingest.py               # PDF loader + text splitter → Chroma index
+│   ├── retriever.py            # Similarity search wrapper over Chroma
+│   ├── extractor_chain.py      # LCEL retrieval chain: query → docs → Gemini answer
+│   ├── rag_demo.py             # End-to-end RAG demo script
+│   └── __init__.py
 │
-├── agents/                 # Role 3 — Agent Engineer
-│   ├── tools.py            # @tool: search_web (DuckDuckGo) + search_wikipedia
-│   ├── validator_agent.py  # ReAct sub-graph: validator node + ToolNode loop
-│   └── __init__.py         # Exports validate_claims(state) for Role 1 to wire in
+├── agents/                     # Role 3 — Agent Engineer
+│   ├── tools.py                # @tool: search_web (DuckDuckGo) + search_wikipedia
+│   ├── validator_agent.py      # ReAct sub-graph: validator node + ToolNode loop
+│   └── __init__.py             # Exports validate_claims(state) for Role 1 to wire in
 │
-├── chains/                 # Role 4 — Output Engineer
-│   ├── output_models.py    #   Pydantic models: ScoreResult + InvestmentMemo
-│   ├── scorer.py           #   LCEL chain: claims+evidence → Gemini → ScoreResult
-│   └── memo_writer.py      #   LCEL chain: full state → Gemini → formatted memo
+├── chains/                     # Role 4 — Output Engineer
+│   ├── output_models.py        # Pydantic models: ScoreResult + InvestmentMemo
+│   ├── scorer.py               # LCEL chain: claims+evidence → Gemini → ScoreResult
+│   └── memo_writer.py          # LCEL chain: full state → Gemini → formatted memo
+│
 ├── data/
-│   └── sample_pitch.pdf    # "Known good" demo deck (JobAnyDay)
-├── tests/                  # Role 5 — Integration Lead
+│   ├── sample_pitch.pdf        # Demo deck — JobAnyDay (used in pipeline smoke test)
+│   └── ecocart_pitch.pdf       # EcoCart AI deck (used in RAG unit tests)
 │
-├── app.py                  # Streamlit UI
-├── requirements.txt        # Dependencies
-└── .env.example            # API key template
+├── tests/                      # Role 5 — Integration Lead
+│   ├── test_chains.py          # Unit tests: scorer + memo writer chains
+│   ├── test_rag_pipeline.py    # Unit tests: Chroma ingestion + retrieval
+│   └── test_validator_agent.py # Unit tests: ReAct agent + tool calls
+│
+├── conftest.py                 # Global pytest config — IE University SSL proxy fix
+├── test_r4.py                  # Smoke test: full pipeline end-to-end (run directly)
+├── app.py                      # Streamlit UI
+├── requirements.txt            # pip dependencies
+├── pyproject.toml              # uv/build dependencies (mirrors requirements.txt)
+└── .env.example                # API key template
 ```
 
 ---
@@ -136,7 +149,7 @@ GenAI_GroupProject/
 | **Lea Hochar** — Agent Engineer | ReAct validation agent, DuckDuckGo + Wikipedia tools, ToolNode sub-graph | `llm.bind_tools`, `ToolNode` |
 | **Stephan Pentchev** — Output Engineer | Scoring chain, investment memo writer | LCEL, Gemini |
 | **Dominique Robson** — Integration Lead | Streamlit UI, end-to-end wiring, live demo | Streamlit |
-| **Smaragda Apostolou** — Presentation Lead | Slides, business case, architecture story | — |
+| **Smaragda Apostolou & Andrea Sabatés** — Presentation Lead | Slides, business case, architecture story, live demo script | — |
 
 ---
 

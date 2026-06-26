@@ -638,7 +638,7 @@ Files **modified on R4 vs main** (potential conflicts on merge):
 | R3 — Agent Engineer | Lea Hochar | ✅ Complete | ReAct validator agent, DuckDuckGo + Wikipedia tools, ToolNode sub-graph |
 | R4 — Output Engineer | Stephan Pentchev | ✅ Complete | Pydantic output models, LCEL scorer, LCEL memo writer, 29 unit tests |
 | R5 — Integration Lead | Dominique Robson | ✅ Complete | Streamlit UI, end-to-end wiring, human interrupt form, graph visualization |
-| R6 — Presentation Lead | Smaragda Apostolou | 🔲 In progress | Slides, business case, live demo script |
+| R6 — Presentation Lead | Smaragda Apostolou & Andrea Sabatés | 🔲 In progress | Slides, business case, live demo script |
 
 ---
 
