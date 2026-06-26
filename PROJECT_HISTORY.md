@@ -196,11 +196,36 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - [ ] Optionally replace direct Gemini extraction in `extract_node` with RAG-based extraction (Chroma retrieval → Gemini prompt)
 - [ ] Test with multiple pitch deck PDFs of varying length
 
-### Role 3 — Agent Engineer (not yet started)
-- [ ] Enhance `validate_node` with a proper LangChain `AgentExecutor` or `create_react_agent`
-- [ ] Add Wikipedia tool alongside DuckDuckGo
-- [ ] Add memory to the validation agent (track previously validated claims)
-- [ ] Consider using `ToolNode` from LangGraph prebuilt (as used in Conchita's news writer notebook)
+### Role 3 — Agent Engineer ✅ Complete
+- [x] Built `agents/tools.py` — `@tool` decorated `search_web` (DuckDuckGo) and `search_wikipedia` (Wikipedia)
+- [x] Built `agents/validator_agent.py` — ReAct sub-graph following professor's news writer pattern exactly: `create_agent()` → `prompt | llm.bind_tools(tools)`, `agent_node()` with `functools.partial`, `ToolNode` from `langgraph.prebuilt`, `should_continue()` conditional edge
+- [x] Exposes `validate_claims(state) -> dict` — reads `state["extracted_claims"]`, writes `state["validation_results"]`
+- [x] `agents/__init__.py` exports `validate_claims` for Role 1 to wire as a node
+- [x] Added `wikipedia` and `ddgs` to `requirements.txt` and `pyproject.toml`
+- [x] Created `pyproject.toml` for `uv lock` / `uv sync` environment setup
+
+**Why an agent and not a regular pipeline:**
+A fixed pipeline would hardcode the search query (e.g. `search("market size " + claim)`). The agent reads each claim, writes its own query, picks the right tool, and can search again if the first result is thin. This matters because the right query depends on what the claim actually says — something you can't know in advance.
+
+**Value of the agent:**
+- Goes beyond the pitch deck — independently checks whether the startup's claims hold up against real-world data
+- Replaces 1-2 hours of manual analyst work per deck (Googling claims, cross-referencing sources, summarising)
+- Makes scoring credible — without it, the scorer would grade the startup on its own claims, which is circular
+- One line: the agent is the fact-checker — it makes sure the AI isn't just taking the startup's word for it
+
+**Architecture — ReAct framework:**
+The validator agent implements the ReAct (Reason + Act) loop:
+1. **Reason** — Gemini reads the claims and decides which tool to call
+2. **Act** — `ToolNode` executes DuckDuckGo or Wikipedia search
+3. **Observe** — result is appended to messages and passed back to Gemini
+4. **Repeat** — loop continues via `should_continue` conditional edge until Gemini stops making tool calls
+
+This is the same pattern as `create_react_agent` from `langgraph.prebuilt`, built explicitly step-by-step following the professor's news writer notebook.
+
+**Design decisions:**
+- `RunnableWithMessageHistory` was dropped — it conflicts with compiled LangGraph sub-graphs and Gemini's message format. Memory is not needed since the validator runs once per pipeline execution.
+- All 4 claims are sent to the agent in a single prompt so it can search for all of them in one loop, rather than running 4 separate sub-graph invocations.
+- Follows professor's `Conchita_News_Writer_Agent_in_LangGraph_june26.ipynb` pattern exactly.
 
 ### Role 4 — Output Engineer (not yet started)
 - [ ] Refine `score_node` prompt for more consistent scoring
@@ -259,3 +284,33 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - Friday: Refine prompts, test with real pitch data
 - Saturday–Sunday: Demo rehearsal + final polish
 - Monday: Presentation
+
+---
+
+## Session 3 — 2026-06-26
+
+**Author:** Lea (Role 3 — Agent Engineer) + Claude
+
+### Role 3 Complete — Validation Agent
+
+Built the full `agents/` module following the professor's news writer notebook pattern.
+
+**Files created:**
+- `agents/tools.py` — `@tool` decorated `search_web` (DuckDuckGo) and `search_wikipedia`
+- `agents/validator_agent.py` — ReAct sub-graph: `create_agent()`, `agent_node()`, `ToolNode`, `should_continue()` conditional edge, `validate_claims(state)` public interface
+- `agents/__init__.py` — exports `validate_claims`
+- `pyproject.toml` — added for `uv` environment management
+
+**Dependencies added:** `wikipedia`, `ddgs` (required by newer `langchain-community` DuckDuckGo wrapper)
+
+**Handoff to Role 1 (Marian):**
+Replace `validate_node` in `graph/nodes.py` with:
+```python
+from agents import validate_claims
+workflow.add_node("validate", validate_claims)
+```
+
+### Pending
+- [ ] R4 (Output Engineer) — fix scorer returning 0, implement Pydantic output models
+- [ ] R1 — wire `validate_claims` into main graph, replace old `validate_node`
+- [ ] Full end-to-end test with real pitch deck PDF
