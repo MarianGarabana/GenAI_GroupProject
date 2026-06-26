@@ -204,6 +204,15 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - [x] Added `wikipedia` and `ddgs` to `requirements.txt` and `pyproject.toml`
 - [x] Created `pyproject.toml` for `uv lock` / `uv sync` environment setup
 
+**Architecture — ReAct framework:**
+The validator agent implements the ReAct (Reason + Act) loop:
+1. **Reason** — Gemini reads the claims and decides which tool to call
+2. **Act** — `ToolNode` executes DuckDuckGo or Wikipedia search
+3. **Observe** — result is appended to messages and passed back to Gemini
+4. **Repeat** — loop continues via `should_continue` conditional edge until Gemini stops making tool calls
+
+This is the same pattern as `create_react_agent` from `langgraph.prebuilt`, built explicitly step-by-step following the professor's news writer notebook.
+
 **Design decisions:**
 - `RunnableWithMessageHistory` was dropped — it conflicts with compiled LangGraph sub-graphs and Gemini's message format. Memory is not needed since the validator runs once per pipeline execution.
 - All 4 claims are sent to the agent in a single prompt so it can search for all of them in one loop, rather than running 4 separate sub-graph invocations.

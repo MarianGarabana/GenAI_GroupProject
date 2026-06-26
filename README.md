@@ -70,6 +70,7 @@ Every component in this project maps directly to a concept taught in class:
 | **LCEL Chains (prompt \| llm \| parser)** | 8–9 | `extract_node`, `score_node`, `validate_node`, `write_memo_node` |
 | **ChatPromptTemplate** | 8–9 | Every Gemini call uses structured prompt templates |
 | **AI Agents + Tool Use** | 7 | `agents/validator_agent.py` — ReAct agent with DuckDuckGo + Wikipedia |
+| **ReAct framework (Reason + Act)** | 7 | `agents/validator_agent.py` — agent reasons which tool to call, acts, observes result, repeats until done |
 | **llm.bind_tools + ToolNode** | 9–10 | `agents/validator_agent.py` — same pattern as class news writer notebook |
 | **Function Calling** | 10–11 | `@tool` decorated functions in `agents/tools.py` |
 | **RAG Pipeline (Indexing → Retrieval → Augmentation)** | 6 | `rag/rag_demo.py` — Chroma vector store + retrieval chain |
