@@ -70,8 +70,10 @@ Every component in this project maps directly to a concept taught in class:
 | **LCEL Chains (prompt \| llm \| parser)** | 8–9 | `extract_node`, `score_node`, `validate_node`, `write_memo_node` |
 | **Pydantic structured output (PydanticOutputParser)** | 8–9 | `chains/scorer.py` + `chains/memo_writer.py` — validates Gemini output against typed models |
 | **ChatPromptTemplate** | 8–9 | Every Gemini call uses structured prompt templates |
-| **AI Agents + Tool Use** | 7 | `validate_node` — agent uses DuckDuckGo to search the web |
-| **Function Calling** | 10–11 | `DuckDuckGoSearchRun.run()` — LLM-driven tool invocation |
+| **AI Agents + Tool Use** | 7 | `agents/validator_agent.py` — ReAct agent with DuckDuckGo + Wikipedia |
+| **ReAct framework (Reason + Act)** | 7 | `agents/validator_agent.py` — agent reasons which tool to call, acts, observes result, repeats until done |
+| **llm.bind_tools + ToolNode** | 9–10 | `agents/validator_agent.py` — same pattern as class news writer notebook |
+| **Function Calling** | 10–11 | `@tool` decorated functions in `agents/tools.py` |
 | **RAG Pipeline (Indexing → Retrieval → Augmentation)** | 6 | `rag/rag_demo.py` — Chroma vector store + retrieval chain |
 | **Embeddings + Vector Search** | 5 | `rag/rag_demo.py` — `GoogleGenerativeAIEmbeddings` + cosine similarity |
 
@@ -86,6 +88,7 @@ Every component in this project maps directly to a concept taught in class:
 | [Google Gemini 2.5 Flash](https://ai.google.dev/) | LLM for extraction, scoring, memo writing |
 | [Chroma](https://www.trychroma.com/) | Vector database for RAG pipeline |
 | [DuckDuckGo Search](https://pypi.org/project/duckduckgo-search/) | Web search tool for claim validation |
+| [Wikipedia](https://pypi.org/project/wikipedia/) | Background research tool for claim validation |
 | [PyPDF](https://pypdf.readthedocs.io/) | PDF text extraction |
 | [Streamlit](https://streamlit.io/) | Web UI |
 
@@ -105,6 +108,10 @@ GenAI_GroupProject/
 │   └── rag_demo.py         # Full RAG pipeline: Chroma + embeddings + retrieval chain
 │
 ├── agents/                 # Role 3 — Agent Engineer
+│   ├── tools.py            # @tool: search_web (DuckDuckGo) + search_wikipedia
+│   ├── validator_agent.py  # ReAct sub-graph: validator node + ToolNode loop
+│   └── __init__.py         # Exports validate_claims(state) for Role 1 to wire in
+│
 ├── chains/                 # Role 4 — Output Engineer
 │   ├── output_models.py    #   Pydantic models: ScoreResult + InvestmentMemo
 │   ├── scorer.py           #   LCEL chain: claims+evidence → Gemini → ScoreResult
@@ -125,11 +132,11 @@ GenAI_GroupProject/
 | Role | Responsibility | Key Technology |
 |---|---|---|
 | **Marian Garabana** — Graph Architect | LangGraph StateGraph, edges, human interrupt, state schema | LangGraph, MemorySaver |
-| **Role 2** — RAG Engineer | PDF ingestion, text splitting, Chroma vector store, claim extraction | Chroma, Embeddings |
-| **Role 3** — Agent Engineer | Web validation agent, DuckDuckGo + Wikipedia tools, memory | LangChain AgentExecutor |
-| **Role 4** — Output Engineer | Scoring chain, investment memo writer | LCEL, Gemini |
-| **Role 5** — Integration Lead | Streamlit UI, end-to-end wiring, live demo | Streamlit |
-| **Role 6** — Presentation Lead | Slides, business case, architecture story | — |
+| **Siddharth Murali** — RAG Engineer | PDF ingestion, text splitting, Chroma vector store, claim extraction | Chroma, Embeddings |
+| **Lea Hochar** — Agent Engineer | ReAct validation agent, DuckDuckGo + Wikipedia tools, ToolNode sub-graph | `llm.bind_tools`, `ToolNode` |
+| **Stephan Pentchev** — Output Engineer | Scoring chain, investment memo writer | LCEL, Gemini |
+| **Dominique Robson** — Integration Lead | Streamlit UI, end-to-end wiring, live demo | Streamlit |
+| **Smaragda Apostolou** — Presentation Lead | Slides, business case, architecture story | — |
 
 ---
 
