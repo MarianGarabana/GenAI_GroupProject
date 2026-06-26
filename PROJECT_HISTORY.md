@@ -442,3 +442,80 @@ JobAnyDay pitch deck added as the "known good" demo PDF. Text-based (not scanned
 - R1 confirms `graph/nodes.py` wiring is compatible with R4's output shape
 - R5 verifies Streamlit renders `investment_memo` markdown correctly (uses `st.markdown`, not `st.text`)
 - All: prompt-tune using JobAnyDay deck as the reference input
+
+---
+
+## Session 3 (continued) — 2026-06-26
+
+**Author:** Steve (Role 4 — Scoring & Output Engineer)
+
+### Merge: main → R4 branch
+
+Merged Lea's R3 work from `main` into the `R4` branch. Three-way conflict resolved across:
+
+| File | Conflict | Resolution |
+| --- | --- | --- |
+| `requirements.txt` | Duplicate `pytest` placement + comment wording | Kept R3's updated comment + `ddgs`/`wikipedia`; `pytest` moved to end |
+| `README.md` | `agents/` vs `chains/` in project structure tree | Merged both — agents with R3's files, chains with R4's files |
+| `PROJECT_HISTORY.md` | Two Session 3 entries (Lea vs Steve) | Kept both under one heading, R3 first then R4 |
+
+New files brought in from R3: `agents/tools.py`, `agents/validator_agent.py`, `agents/__init__.py`, `pyproject.toml`, `tests/test_validator_agent.py`.
+
+---
+
+### scorer.py prompt update — R3 compatibility
+
+R3's agent outputs **rich text paragraphs** of research evidence (not simple `VERIFIED`/`UNVERIFIED` labels). Updated the EVIDENCE ADJUSTMENT RULE in `chains/scorer.py` to judge evidence by text quality rather than labels:
+
+- **Before:** "A VERIFIED claim should score at least 0.5 higher than UNVERIFIED"
+- **After:** "If the evidence contains specific numbers, statistics, or named sources → treat as strong; vague or generic text → treat as weak; no relevant findings → cap at 5.0"
+
+This makes scoring more accurate — Gemini now reads real evidence rather than single-word labels.
+
+---
+
+### pytest configuration fixed
+
+`test_r4.py` (smoke test) was being collected by pytest as a test module because the filename starts with `test_`. Module-level code including `raise SystemExit(1)` caused an INTERNALERROR during collection.
+
+Fix: wrapped all executable code in `if __name__ == "__main__":` so pytest can safely import the file without running it.
+
+---
+
+### Test results
+
+```
+pytest tests/test_chains.py      → 29/29 passed (R4 unit tests, no API calls)
+pytest                           → 29 passed, 6 skipped, 1 failed
+```
+
+The 1 remaining failure (`test_not_mentioned_claims` in `test_validator_agent.py`) is a bug in R3's error handler — when the API returns 403, the exception catches ALL claims (including the ones pre-filtered as "Not mentioned") and overwrites them with `UNVERIFIED`. R3 skip guard only covers 429 (rate limit), not 403 (blocked key). Not an R4 issue.
+
+---
+
+### Issues Resolved This Session
+
+| Issue | Root Cause | Fix |
+| --- | --- | --- |
+| pytest INTERNALERROR on `test_r4.py` | File collected as test module; `raise SystemExit(1)` ran during collection | Wrapped all code in `if __name__ == "__main__":` |
+| `ddgs` ModuleNotFoundError | Merge brought in R3's new dependency but venv not synced | `pip install -r requirements.txt` |
+| 403 PERMISSION_DENIED | API key belonged to GCP project where Gemini API was blocked | Create new API key from AI Studio on a new project (free tier) |
+| Duplicate `ddgs` in requirements.txt | User manually added bare `ddgs` after `ddgs>=0.1.0` already existed | Removed duplicate |
+
+---
+
+### Status after Session 3
+
+**R3 agent:** Complete  
+**R4 chains:** Complete and verified  
+**Merge:** R3 + R4 integrated on R4 branch  
+**Unit tests:** 29/29 R4 tests passing  
+**Blocked on:** Valid Gemini API key with free-tier access (create at aistudio.google.com → "Create API key in new project")
+
+### Next Steps — Friday 27 Jun
+
+- Get working API key (free tier, new project in AI Studio)
+- Run `python test_r4.py` to get real scores + memo output
+- R1 wires `validate_claims` from `agents/__init__.py` into `graph/nodes.py`
+- R5 confirms `st.markdown(memo)` is used (not `st.text`) for investment memo rendering
+- All: end-to-end demo rehearsal with JobAnyDay pitch deck
