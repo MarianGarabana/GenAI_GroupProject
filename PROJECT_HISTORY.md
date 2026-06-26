@@ -204,6 +204,15 @@ st.image(img_bytes, caption="Live Agent Pipeline")
 - [x] Added `wikipedia` and `ddgs` to `requirements.txt` and `pyproject.toml`
 - [x] Created `pyproject.toml` for `uv lock` / `uv sync` environment setup
 
+**Why an agent and not a regular pipeline:**
+A fixed pipeline would hardcode the search query (e.g. `search("market size " + claim)`). The agent reads each claim, writes its own query, picks the right tool, and can search again if the first result is thin. This matters because the right query depends on what the claim actually says — something you can't know in advance.
+
+**Value of the agent:**
+- Goes beyond the pitch deck — independently checks whether the startup's claims hold up against real-world data
+- Replaces 1-2 hours of manual analyst work per deck (Googling claims, cross-referencing sources, summarising)
+- Makes scoring credible — without it, the scorer would grade the startup on its own claims, which is circular
+- One line: the agent is the fact-checker — it makes sure the AI isn't just taking the startup's word for it
+
 **Architecture — ReAct framework:**
 The validator agent implements the ReAct (Reason + Act) loop:
 1. **Reason** — Gemini reads the claims and decides which tool to call
