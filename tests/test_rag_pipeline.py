@@ -10,7 +10,7 @@ from rag.ingest import ingest_pdf_to_chroma, load_pdf_documents, split_documents
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SAMPLE_PDF = PROJECT_ROOT / "data" / "sample_pitch.pdf"
+SAMPLE_PDF = PROJECT_ROOT / "data" / "ecocart_pitch.pdf"
 
 
 def test_load_and_split_sample_pitch_pdf():
