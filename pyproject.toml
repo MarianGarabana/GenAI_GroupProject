@@ -27,6 +27,7 @@ dependencies = [
     "wikipedia>=1.4.0",
     # PDF extraction
     "pypdf>=4.0.0",
+    "httpx>=0.24.0"
 ]
 
 [tool.uv]
