@@ -126,11 +126,11 @@ GenAI_GroupProject/
 | Role | Responsibility | Key Technology |
 |---|---|---|
 | **Marian Garabana** — Graph Architect | LangGraph StateGraph, edges, human interrupt, state schema | LangGraph, MemorySaver |
-| **Role 2** — RAG Engineer | PDF ingestion, text splitting, Chroma vector store, claim extraction | Chroma, Embeddings |
-| **Role 3** — Agent Engineer | ReAct validation agent, DuckDuckGo + Wikipedia tools, ToolNode sub-graph | `llm.bind_tools`, `ToolNode` |
-| **Role 4** — Output Engineer | Scoring chain, investment memo writer | LCEL, Gemini |
-| **Role 5** — Integration Lead | Streamlit UI, end-to-end wiring, live demo | Streamlit |
-| **Role 6** — Presentation Lead | Slides, business case, architecture story | — |
+| **Siddharth Murali** — RAG Engineer | PDF ingestion, text splitting, Chroma vector store, claim extraction | Chroma, Embeddings |
+| **Lea Hochar** — Agent Engineer | ReAct validation agent, DuckDuckGo + Wikipedia tools, ToolNode sub-graph | `llm.bind_tools`, `ToolNode` |
+| **Stephan Pentchev** — Output Engineer | Scoring chain, investment memo writer | LCEL, Gemini |
+| **Dominique Robson** — Integration Lead | Streamlit UI, end-to-end wiring, live demo | Streamlit |
+| **Smaragda Apostolou** — Presentation Lead | Slides, business case, architecture story | — |
 
 ---
 
