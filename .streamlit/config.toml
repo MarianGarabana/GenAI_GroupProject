@@ -1,0 +1,59 @@
+# ============================================================
+# VC Pitch Evaluator — "deep navy / technological" dark theme
+# ------------------------------------------------------------
+# Native Streamlit theming (no hacky CSS). Deep navy canvas with
+# electric-blue primary and neon accents — a fund-meets-lab feel.
+# Inter for UI, JetBrains Mono for the memo/code.
+#
+# Edit colors here — they hot-reload on save (fonts need restart).
+# ============================================================
+
+[theme]
+base = "dark"
+primaryColor = "#2F6BFF"               # electric blue — CTAs, active elements
+backgroundColor = "#0A1326"            # deep navy canvas
+secondaryBackgroundColor = "#111E38"  # cards, widgets, code blocks
+textColor = "#E6ECF7"                 # light body text
+linkColor = "#5B9BFF"
+borderColor = "#22324F"
+codeBackgroundColor = "#0E1A30"
+codeTextColor = "#9FE0FF"
+
+baseRadius = "12px"
+buttonRadius = "10px"
+showWidgetBorder = true
+showSidebarBorder = true
+linkUnderline = false
+
+# Typography — Inter everywhere, JetBrains Mono for code/memo
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+baseFontSize = 15
+baseFontWeight = 400
+codeFontSize = "13px"
+headingFontSizes = ["34px", "26px", "21px", "17px", "15px", "13px"]
+headingFontWeights = [800, 700, 700, 600, 600, 600]
+
+# Semantic palette — st.metric deltas, badges, colored text (tuned for dark)
+redColor = "#FB7185"
+orangeColor = "#FBBF24"
+yellowColor = "#FACC15"
+greenColor = "#34D399"
+blueColor = "#5B9BFF"
+violetColor = "#A78BFA"
+grayColor = "#94A3B8"
+
+# Chart palette — neon-on-navy, matches the live pipeline stage colors
+chartCategoricalColors = ["#22D3EE", "#3B82F6", "#8B5CF6", "#FBBF24", "#FB7185", "#34D399", "#5B9BFF"]
+
+dataframeBorderColor = "#22324F"
+dataframeHeaderBackgroundColor = "#111E38"
+
+[theme.sidebar]
+backgroundColor = "#070F1F"
+secondaryBackgroundColor = "#0E1A30"
+codeBackgroundColor = "#0B1426"
+textColor = "#E6ECF7"
+borderColor = "#1B2A44"
+primaryColor = "#2F6BFF"

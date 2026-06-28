@@ -1,0 +1,17 @@
+<svg width="208" height="44" viewBox="0 0 208 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lg_navy" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#26365C"/>
+      <stop offset="1" stop-color="#16213B"/>
+    </linearGradient>
+  </defs>
+  <rect width="44" height="44" rx="12" fill="url(#lg_navy)"/>
+  <rect x="10" y="24" width="4.5" height="9"  rx="2" fill="#7FA8FF"/>
+  <rect x="17" y="20" width="4.5" height="13" rx="2" fill="#A9C4FF"/>
+  <rect x="24" y="15" width="4.5" height="18" rx="2" fill="#D9E5FF"/>
+  <rect x="31" y="10" width="4.5" height="23" rx="2" fill="#FFFFFF"/>
+  <path d="M11 22 L20 18 L27 13 L34 8" stroke="#5B8DEF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <text x="56" y="22" font-family="Inter, system-ui, sans-serif" font-size="17" font-weight="800" fill="#1A2233" letter-spacing="-0.2">Pitch</text>
+  <text x="103" y="22" font-family="Inter, system-ui, sans-serif" font-size="17" font-weight="500" fill="#1A2233" letter-spacing="-0.2">Evaluator</text>
+  <text x="56" y="35" font-family="Inter, system-ui, sans-serif" font-size="9.5" font-weight="600" fill="#64748B" letter-spacing="1.6">AI INVESTMENT MEMOS</text>
+</svg>
