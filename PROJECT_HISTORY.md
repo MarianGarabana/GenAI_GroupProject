@@ -887,3 +887,83 @@ Bumped `streamlit>=1.35.0` → `streamlit>=1.50.0` (local env upgraded to 1.58.0
 ### Not yet tested live
 
 The full `graph.stream` + interrupt-resume path needs a real `GOOGLE_API_KEY` and a PDF, so it could not be exercised in this environment — the rendering/branch logic is all verified, but **one real run is recommended before the demo.**
+
+---
+
+## Session 6 — 2026-06-28 (Pre-demo polish)
+
+**Author:** Stephan Pentchev (Role 4 — Output Engineer) + Claude (GenAI Expert)
+
+### Context — What Changed After the First Full Live Run
+
+Running the full pipeline with R3's ReAct agent integrated revealed a critical insight: the same JobAnyDay deck that scored **8.22 composite (INVEST)** before validation now scores **2.72–3.3 composite (PASS)**. The difference:
+
+- **Before R3 merge:** `validate_node` was a placeholder; scorer graded claims at face value → high scores
+- **After R3 merge:** ReAct agent ran real DuckDuckGo searches and found that the listed CEO (Mirza Tahir) is a religious leader who died in 2003, and the claimed $45.7B market is contradicted by multiple external sources → steep evidence-penalty scores
+
+This changes the entire presentation narrative. The demo now produces a **PASS + human review trigger** — which is actually the stronger story: the AI caught what a naive reader would have missed.
+
+---
+
+### What Was Built
+
+#### `views/evaluator.py` — Score explanations + dimension tooltips
+
+**Reasoning captions under each metric card:**
+Each score now shows a one-sentence AI-generated explanation beneath the number. These come from the `reasoning` field already in `ScoreResult` (a `ScoreReasoning` Pydantic model with `market`, `team`, `traction`, `product` string fields). No new LLM calls needed — the data was already there, just not displayed.
+
+**Composite score + confidence badges:**
+The summary row now shows the actual `composite_score` (Python-computed, not averaged) and the evidence `confidence` field as a colour-coded badge: green = High, blue = Medium, orange = Low.
+
+**"Why review was triggered" expander:**
+When the graph pauses at `human_review_node`, a new expanded panel lists only the dimensions that fell below 6/10, each with its AI reasoning sentence. This gives the analyst — and the demo audience — immediate context before typing feedback.
+
+**Dimension-specific hover tooltips:**
+Each of the 4 metric cards now has a detailed `help=` tooltip explaining:
+- What the dimension measures
+- Its weight in the composite (market 30%, team 30%, product 25%, traction 15%)
+- Why the investment bar is set at 6
+- What a low score means for the decision
+
+`DIMENSIONS` changed from 3-tuples `(label, key, icon)` to 4-tuples `(label, key, icon, help_text)`. All three unpack sites updated to use `*_` or explicit 4th variable.
+
+---
+
+#### `VC Startup Pitch Evaluator · IE University · GenAI Final Project.htm` — Slide updates
+
+**Slide 1 (Title hero):** Score changed from `8.22 / INVEST` → `?? / ??` — no spoilers before the live demo.
+
+**Slide 6 (Live Demo):**
+- All score bars changed to `??` at 50% neutral grey fills
+- Composite changed to `??`, verdict to `LIVE →`
+- Subtitle updated: "Find out live" instead of "the scores land like this"
+- Speaker notes updated to reflect that the deck WILL trigger human review, output will be PASS
+
+**New Slide 6b (Honest Assessment — 13th slide total):**
+Added between the Live Demo and ReAct slides. Two-panel layout:
+- Left: 3 failure modes with full explanations (search variability, name ambiguity, no-web-presence ≠ fraud)
+- Right: 3 mitigations with full explanations (confidence badge, graduated caps not zeroes, human review gate)
+- Footer: "Direction over false precision"
+
+---
+
+#### `VC_Pitch_Evaluator_Script_v3.html` (new — sibling to v2 PDF)
+
+Updated presentation script reflecting the new demo narrative:
+- S6 Live Demo section rewritten: no pre-announced scores, narrates the live reveal, acknowledges the PASS outcome and human review trigger
+- New S6b section (Honest Assessment): ~1 min script for the limitations slide
+- S8 Human-in-the-Loop updated: "as you just saw live" instead of "JobAnyDay scored clean, so it didn't fire"
+- Q&A updated: new answer for "Why do the scores vary between runs?", updated HITL answer
+- Rehearsal checklist updated: 13 slides, expect PASS not INVEST, HITL will fire live
+- Timing updated: ~16 min total (extra 1 min for S6b)
+
+---
+
+### Key Insight for Presentation
+
+The score change from 8.22 → 2.72 is not a bug — it is the entire point of the project. Use this two-line story:
+
+> *"Before the validation agent: the AI read the pitch deck and believed everything it said — 8.22, INVEST."*
+> *"After the validation agent: the AI Googled the founders and found the CEO died in 2003 — 2.72, PASS."*
+
+The human review trigger is now a **live feature of the demo**, not just a theoretical explanation. The audience will watch the graph freeze, the analyst form appear, and the pipeline resume with feedback incorporated into the memo.
