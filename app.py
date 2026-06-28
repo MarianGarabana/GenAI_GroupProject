@@ -10,12 +10,24 @@ def _ssl_fixed_httpx_init(self, *args, **kwargs):
     _orig_httpx_init(self, *args, **kwargs)
 httpx.Client.__init__ = _ssl_fixed_httpx_init
 
+import os
 from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# On Streamlit Cloud there is no .env file; the API key lives in st.secrets.
+# Downstream modules read os.getenv("GOOGLE_API_KEY"), so copy any secrets
+# into the environment before those modules build their LLM clients.
+try:
+    for _key in ("GOOGLE_API_KEY", "GEMINI_API_KEY"):
+        if _key in st.secrets and not os.getenv(_key):
+            os.environ[_key] = st.secrets[_key]
+except Exception:
+    # No secrets.toml locally — .env (load_dotenv above) covers that case.
+    pass
 
 # ------------------------------------------------------------------
 # Navigation shell
