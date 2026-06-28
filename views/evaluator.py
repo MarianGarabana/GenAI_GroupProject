@@ -70,10 +70,52 @@ PIPELINE = [
 NODE_KEYS = {p[0] for p in PIPELINE}
 
 DIMENSIONS = [
-    ("Market", "market", ":material/public:"),
-    ("Team", "team", ":material/groups:"),
-    ("Product", "product", ":material/widgets:"),
-    ("Traction", "traction", ":material/trending_up:"),
+    (
+        "Market", "market", ":material/public:",
+        (
+            "Market size & opportunity (30% of composite score)\n\n"
+            "Measures how large and credible the addressable market is. "
+            "Scores above 6 require a verified, sizable TAM with a realistic path to capturing it. "
+            "Below 6 flags an overstated, understated, or unverifiable market — a major concern "
+            "because market size is the ceiling on potential returns.\n\n"
+            f"Human review triggers if this falls below {SCORE_BAR}/10."
+        ),
+    ),
+    (
+        "Team", "team", ":material/groups:",
+        (
+            "Founding team quality (30% of composite score)\n\n"
+            "Evaluates whether the founders have the credentials, domain expertise, and track record "
+            "to execute. At seed stage this is the single most important signal — investors bet on "
+            "the team as much as the idea. Scores above 6 require independently verifiable "
+            "backgrounds. Below 6 means credentials are unverified, contradicted by web searches, "
+            "or key roles are missing.\n\n"
+            f"Human review triggers if this falls below {SCORE_BAR}/10."
+        ),
+    ),
+    (
+        "Product", "product", ":material/widgets:",
+        (
+            "Product differentiation & defensibility (25% of composite score)\n\n"
+            "Assesses whether the product solves a real problem in a differentiated way and whether "
+            "the competitive advantage is defensible (IP, network effects, switching costs). "
+            "Scores above 6 require specific, verifiable claims about what makes the product "
+            "unique. Below 6 flags vague or generic claims without supporting evidence.\n\n"
+            f"Human review triggers if this falls below {SCORE_BAR}/10."
+        ),
+    ),
+    (
+        "Traction", "traction", ":material/trending_up:",
+        (
+            "Revenue, growth & customer traction (15% of composite score)\n\n"
+            "Looks at real-world evidence that people are using and paying for the product — "
+            "revenue, active users, growth rate, signed contracts. Carries the least weight at "
+            "seed stage because early-stage companies may not have much yet. However, any "
+            "reported metrics that are internally inconsistent or appear to misrepresent "
+            "performance (e.g. GMV reported as revenue) will lower this score significantly.\n\n"
+            f"Human review triggers if this falls below {SCORE_BAR}/10."
+        ),
+    ),
 ]
 
 PIPE_STYLE = """
@@ -176,8 +218,12 @@ def pipeline_html(completed, scores) -> str:
 
 def render_scores(scores: dict) -> None:
     st.markdown("##### :material/scoreboard: Scores")
+    reasoning = scores.get("reasoning") or {}
+    confidence = scores.get("confidence", "")
+    composite = scores.get("composite_score")
+
     cols = st.columns(4)
-    for col, (label, key, icon) in zip(cols, DIMENSIONS):
+    for col, (label, key, icon, help_text) in zip(cols, DIMENSIONS):
         value = scores.get(key, "—")
         with col:
             if isinstance(value, (int, float)):
@@ -186,20 +232,43 @@ def render_scores(scores: dict) -> None:
                     f"{value:g}/10",
                     delta=round(value - SCORE_BAR, 1),
                     border=True,
-                    help=f"Investment bar is {SCORE_BAR}/10. Delta shows distance from the bar.",
+                    help=help_text,
                 )
+                reason = reasoning.get(key, "") if isinstance(reasoning, dict) else ""
+                if reason:
+                    st.caption(reason)
             else:
                 st.metric(f"{icon} {label}", "—", border=True)
 
-    numeric = [scores.get(k) for _, k, _ in DIMENSIONS if isinstance(scores.get(k), (int, float))]
-    if numeric:
-        avg = sum(numeric) / len(numeric)
-        if avg >= 7.5:
-            st.markdown(f":green-badge[:material/verified: Strong — avg {avg:.1f}/10]")
-        elif avg >= SCORE_BAR:
-            st.markdown(f":blue-badge[:material/thumb_up: Solid — avg {avg:.1f}/10]")
+    badge_parts = []
+    if composite is not None:
+        if composite >= 7.5:
+            badge_parts.append(f":green-badge[:material/verified: Strong — composite {composite:.2f}/10]")
+        elif composite >= SCORE_BAR:
+            badge_parts.append(f":blue-badge[:material/thumb_up: Solid — composite {composite:.2f}/10]")
         else:
-            st.markdown(f":orange-badge[:material/warning: Below bar — avg {avg:.1f}/10]")
+            badge_parts.append(f":orange-badge[:material/warning: Below bar — composite {composite:.2f}/10]")
+    else:
+        numeric = [scores.get(k) for _, k, *_ in DIMENSIONS if isinstance(scores.get(k), (int, float))]
+        if numeric:
+            avg = sum(numeric) / len(numeric)
+            if avg >= 7.5:
+                badge_parts.append(f":green-badge[:material/verified: Strong — avg {avg:.1f}/10]")
+            elif avg >= SCORE_BAR:
+                badge_parts.append(f":blue-badge[:material/thumb_up: Solid — avg {avg:.1f}/10]")
+            else:
+                badge_parts.append(f":orange-badge[:material/warning: Below bar — avg {avg:.1f}/10]")
+
+    conf_badge = {
+        "high":   ":green-badge[:material/shield: Evidence confidence: High]",
+        "medium": ":blue-badge[:material/shield: Evidence confidence: Medium]",
+        "low":    ":orange-badge[:material/error: Evidence confidence: Low]",
+    }.get(confidence, "")
+    if conf_badge:
+        badge_parts.append(conf_badge)
+
+    if badge_parts:
+        st.markdown("  &nbsp;  ".join(badge_parts))
 
 
 def render_memo(memo: str, *, key: str) -> None:
@@ -343,6 +412,19 @@ elif ss.get("interrupt"):
     st.html(pipeline_html(ss.get("completed", []), ss.get("scores", {})))
     st.warning("One or more scores fell below the bar — analyst sign-off required.", icon=":material/gavel:")
     render_scores(ss.get("scores", {}))
+
+    scores = ss.get("scores", {})
+    flagged = [
+        (label, key, scores[key])
+        for label, key, *_ in DIMENSIONS
+        if isinstance(scores.get(key), (int, float)) and scores[key] < SCORE_BAR
+    ]
+    if flagged:
+        with st.expander(f":material/flag: Why review was triggered ({len(flagged)} dimension{'s' if len(flagged) > 1 else ''} below {SCORE_BAR}/10)", expanded=True):
+            reasoning = scores.get("reasoning") or {}
+            for label, key, val in flagged:
+                reason = reasoning.get(key, "") if isinstance(reasoning, dict) else ""
+                st.markdown(f"**{label}: {val:g}/10** — {reason}" if reason else f"**{label}: {val:g}/10**")
 
     st.markdown("##### :material/rate_review: Analyst review")
     feedback = st.text_area(
