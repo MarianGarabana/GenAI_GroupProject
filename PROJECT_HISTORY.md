@@ -809,3 +809,81 @@ A VC firm reviewing 100 pitch decks per month could save **250 hours of analyst 
 6. **RAG decision** (1 min) — Show we built it, explain why we didn't use it in production.
 7. **Class concepts covered** (1 min) — Show the table from README.md mapping every feature to a session.
 8. **Business case** (1 min) — The numbers table above.
+
+---
+
+## Session 5 — 2026-06-28
+
+**Author:** Marian Garabana (Role 5 — Integration / Streamlit) + Claude (GenAI Expert)
+
+### What Was Built — UI/UX redesign
+
+The app worked but looked plain. This session rebuilt the entire front end into a polished, demo-ready product with a "deep navy / technological" identity, a real brand, a two-page layout, and **live, agent-by-agent animation** of the pipeline as it runs. No backend/graph logic was changed — only how it is presented (plus one genuine HITL robustness fix).
+
+---
+
+#### `.streamlit/config.toml` (new)
+
+Native Streamlit theme (no CSS hacks) — the single biggest visual win.
+
+- `base = "dark"`, deep-navy canvas (`#0A1326`), electric-blue primary (`#2F6BFF`), neon accents.
+- Inter for UI, JetBrains Mono for the memo/code; full heading scale + weights.
+- Semantic + chart palettes tuned for dark; the chart colors match the live-pipeline stage colors.
+- Separate darker `[theme.sidebar]`.
+
+`.gitignore` was updated (`​.streamlit/*` + `!.streamlit/config.toml`) so the theme is shared with the team while `secrets.toml` stays ignored.
+
+---
+
+#### `assets/logo.svg` + `assets/icon.svg` (new)
+
+Brand logomark — ascending bars (market / team / product / traction) with a trend tick. Wired via `st.logo(...)`; the icon doubles as the browser favicon.
+
+---
+
+#### `app.py` (rewritten as a navigation shell)
+
+Now the single entry point that only does: SSL fix → `st.set_page_config` → `st.logo` → `st.navigation([...])` → shared sidebar footer. The heavy LangGraph import moved into the evaluator page so the shell boots instantly.
+
+- **Class concept:** multi-page apps with `st.Page` / `st.navigation`.
+
+---
+
+#### `views/evaluator.py` (new — main page)
+
+The upload-and-analyze experience, restyled and made **live**.
+
+- **Live agent pipeline animation.** Instead of a single blocking `graph.invoke()`, the page now consumes `graph.stream(..., stream_mode="updates")` and re-renders an animated pipeline every time a node finishes. Each stage lights up exactly while its agent is working — a different color per stage (Ingest cyan → Extract blue → Validate violet → Score amber → Review rose → Memo emerald), with a glowing pulse + spinning ring on the active node, a check badge + gradient-filled connector on completed ones, and a dashed "Skipped" state for the human-review node when all scores ≥ 6.
+  - **Class concept:** `graph.stream()` node-by-node streaming (Sessions 9-10).
+- **Human-in-the-loop actually resumes now.** The previous nested-button structure lost its state on rerun, so the review form could never resume the graph. Rewrote it around `st.session_state` + a fresh per-run `uuid` thread id: the interrupt is persisted, the analyst form survives reruns, and Submit resumes via the checkpointer and re-animates Review → Memo.
+- Bordered metric score cards with delta-vs-bar and a verdict badge; memo rendered in a bordered container with a download button; Material icons and badges throughout.
+- **Icons:** real `<svg>` elements are stripped by Streamlit's HTML sanitizer, so the stage icons are minimalist **white line-icons rendered as CSS `mask-image` data-URIs** inside `<style>` (survives sanitization, crisp, recolorable).
+
+---
+
+#### `views/how_it_works.py` (new — explainer page)
+
+A walkthrough of how the six agents turn a PDF into a memo, built for the live demo / presentation.
+
+- A **pure-CSS animated hero pipeline** (staggered fade-up, pulsing rings, floating nodes, light particles travelling along the connectors) — color-coded blue analysis → amber human gate → green output.
+- Six detail cards, each mapped to the class session it demonstrates (RAG, LCEL, agents+tools, structured output, HITL, generation).
+- "Why LangGraph" notes + the **live** Mermaid graph rendered from the compiled graph (with a graceful fallback if the network/renderer is unavailable).
+- Uses the same white CSS-mask icons as the evaluator for consistency.
+
+---
+
+#### `pyproject.toml` (updated)
+
+Bumped `streamlit>=1.35.0` → `streamlit>=1.50.0` (local env upgraded to 1.58.0). The advanced native theming used in `config.toml` (semantic colors, heading scale, button radius, chart palette) requires ≥ 1.50; older versions ignore the extra keys gracefully, so nothing breaks for teammates who haven't upgraded yet.
+
+---
+
+### Verification
+
+- All files compile; headless `streamlit.testing.v1.AppTest` runs of the nav shell and both pages render with **zero exceptions** across empty / live-result / interrupt-review states.
+- Theme loads clean (no invalid-option warnings) on 1.58.0.
+- `use_container_width` modernised to `width="stretch"`.
+
+### Not yet tested live
+
+The full `graph.stream` + interrupt-resume path needs a real `GOOGLE_API_KEY` and a PDF, so it could not be exercised in this environment — the rendering/branch logic is all verified, but **one real run is recommended before the demo.**
