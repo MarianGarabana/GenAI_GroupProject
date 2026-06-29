@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
+from langchain_core.output_parsers import JsonOutputParser
 from langchain_community.tools import DuckDuckGoSearchRun
 from langgraph.types import interrupt
 from pypdf import PdfReader
@@ -39,6 +39,7 @@ from pypdf import PdfReader
 from graph.state import PitchState
 from chains.scorer import score_claims
 from chains.memo_writer import write_memo
+from agents.validator_agent import validate_claims
 
 # Load environment variables from .env file (GOOGLE_API_KEY)
 load_dotenv()
@@ -245,95 +246,16 @@ def validate_node(state: PitchState) -> dict:
     CLASS CONCEPT: "AI Agents + Tool Use" — Session 7
     Agents have TOOLS they can use to take actions. Here, the tool is web search.
 
-    CLASS CONCEPT: "LangChain Tools (DuckDuckGoSearchRun)" — Sessions 8-9
+    CLASS CONCEPT: "LangChain Tools (DuckDuckGoSearchRun + WikipediaQueryRun)" — Sessions 8-9
     CLASS CONCEPT: "Function Calling" — Sessions 10-11
-    The search_tool.run() call is equivalent to function calling —
-    we're giving the agent the ability to call an external function (web search).
+    The agent sub-graph uses llm.bind_tools() so Gemini decides which tool to call
+    and how many times — this is the full ReAct (Reason + Act) loop pattern.
 
-    CLASS CONCEPT: "LCEL Chains" — Sessions 8-9
-    We use a second chain to have Gemini summarize the search results.
+    CLASS CONCEPT: "Multi-agent sub-graphs" — Sessions 9-10
+    validate_claims() runs its own internal StateGraph with a validator node and
+    a ToolNode, looping until Gemini stops calling tools.
     """
-    claims = state.get("extracted_claims", {})
-
-    if not claims:
-        return {
-            "validation_results": {},
-            "error": "No claims to validate.",
-        }
-
-    validation_results = {}
-
-    # Search query templates for each claim dimension
-    search_queries = {
-        "market_size": "market size {context}",
-        "team_background": "founder background {context}",
-        "traction": "startup traction metrics benchmark {context}",
-        "product_description": "competitor analysis {context}",
-    }
-
-    # Gemini prompt for assessing each piece of web evidence
-    # Another LCEL chain — Sessions 8-9
-    assessment_prompt = ChatPromptTemplate.from_template(
-        """You are a VC analyst fact-checking a startup claim.
-
-The startup claims: "{claim_text}"
-
-Here is what a web search found about this topic:
----
-{search_result}
----
-
-In 2-3 sentences, assess whether the startup's claim is supported by real-world data.
-Start your response with ONE of these labels:
-- VERIFIED — if web data clearly supports the claim
-- PLAUSIBLE — if the claim seems reasonable but isn't directly confirmed
-- UNVERIFIED — if web data contradicts or doesn't support the claim
-
-Be specific. Mention actual numbers or facts from the search results when possible."""
-    )
-
-    # String output parser — just returns Gemini's text as-is
-    assessment_chain = assessment_prompt | get_llm() | StrOutputParser()
-
-    for claim_key, claim_text in claims.items():
-        # Skip claims that weren't mentioned in the pitch deck
-        if "Not mentioned" in str(claim_text) or not str(claim_text).strip():
-            validation_results[claim_key] = "N/A — Not claimed in pitch deck."
-            continue
-
-        try:
-            # TOOL USE: Call DuckDuckGo search
-            # This is the "Action" step in the Observation → Thought → Action loop
-            # Concept: "What is an AI Agent?" — Session 7
-            query_template = search_queries.get(claim_key, "{context}")
-            # Build a focused search query
-            short_claim = str(claim_text)[:150]  # Keep query short
-            search_query = query_template.format(context=short_claim)
-
-            # search_tool.run() calls DuckDuckGo — this is FUNCTION CALLING (Sessions 10-11)
-            raw_search_result = get_search_tool().run(search_query)
-
-            # Limit search result length to avoid exceeding token limits
-            truncated_result = str(raw_search_result)[:2000]
-
-            # LCEL chain: Use Gemini to assess the search results
-            # Sessions 8-9 — same prompt | llm | parser pattern
-            assessment = assessment_chain.invoke(
-                {
-                    "claim_text": claim_text,
-                    "search_result": truncated_result,
-                }
-            )
-
-            validation_results[claim_key] = assessment
-
-        except Exception as e:
-            # If search fails (rate limit, no internet, etc.), mark as unable to verify
-            validation_results[claim_key] = (
-                f"UNVERIFIED — Search unavailable: {str(e)[:100]}"
-            )
-
-    return {"validation_results": validation_results, "error": None}
+    return validate_claims(state)
 
 
 # ============================================================
